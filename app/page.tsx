@@ -1,5 +1,8 @@
-import { SignUpButton, SignInButton, UserButton, auth } from "@clerk/nextjs";
+import { SignUpButton, SignInButton, UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const { userId } = await auth();

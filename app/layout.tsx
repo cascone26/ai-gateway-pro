@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: "Multi-provider AI API with paywall",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: {

@@ -1,6 +1,9 @@
-import { SignUpButton, auth } from "@clerk/nextjs";
+import { SignUpButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import CheckoutButton from "@/components/CheckoutButton";
+
+export const dynamic = "force-dynamic";
 
 export default async function Pricing() {
   const { userId } = await auth();

@@ -1,8 +1,10 @@
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
+
+export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   const { userId } = await auth();
