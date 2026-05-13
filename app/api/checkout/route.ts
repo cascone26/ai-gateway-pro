@@ -1,7 +1,14 @@
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+let stripe: Stripe;
+
+function getStripe() {
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+  }
+  return stripe;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -15,7 +22,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const session = await stripe.checkout.sessions.create({
+    const stripeClient = getStripe();
+    const session = await stripeClient.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [

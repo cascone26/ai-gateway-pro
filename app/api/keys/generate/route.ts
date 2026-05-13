@@ -3,10 +3,17 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabase: ReturnType<typeof createClient>;
+
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
+  }
+  return supabase;
+}
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
@@ -24,16 +31,16 @@ export async function POST(request: NextRequest) {
   const keyId = crypto.randomUUID();
 
   try {
-    await supabase
+    const client = getSupabase() as any;
+    await client
       .from("aigw_api_keys")
-      .insert({
+      .insert([{
         key_id: keyId,
         user_id: userId,
         key_hash: keyHash,
         label,
         created_at: new Date().toISOString(),
-      })
-      .single();
+      }]);
 
     // Return the key only once
     return NextResponse.json({

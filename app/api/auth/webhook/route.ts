@@ -2,10 +2,17 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabase: ReturnType<typeof createClient>;
+
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
+  }
+  return supabase;
+}
 
 export async function POST(request: NextRequest) {
   const payload = await request.text();
@@ -32,15 +39,15 @@ export async function POST(request: NextRequest) {
     const userId = data.id;
     const email = data.email_addresses[0]?.email_address;
 
-    await supabase
+    const client = getSupabase() as any;
+    await client
       .from("aigw_users")
-      .insert({
+      .insert([{
         id: userId,
         email,
         plan: "free",
         created_at: new Date().toISOString(),
-      })
-      .single();
+      }]);
   }
 
   return NextResponse.json({ success: true });

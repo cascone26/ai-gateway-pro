@@ -1,13 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabase: ReturnType<typeof createClient>;
+
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
+  }
+  return supabase;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const client = getSupabase() as any;
+
     // Extract Bearer token
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -21,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Look up key in database
     const keyHash = Buffer.from(token).toString("hex");
-    const { data: keyRecord } = await supabase
+    const { data: keyRecord } = await client
       .from("aigw_api_keys")
       .select("user_id, key_id")
       .eq("key_hash", keyHash)
@@ -39,7 +48,7 @@ export async function POST(request: NextRequest) {
     const keyId = keyRecord.key_id;
 
     // Get user and check plan
-    const { data: user } = await supabase
+    const { data: user } = await client
       .from("aigw_users")
       .select("plan")
       .eq("id", userId)
@@ -56,7 +65,7 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     const month_year = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    const { data: usage } = await supabase
+    const { data: usage } = await client
       .from("aigw_usage")
       .select("request_count")
       .eq("user_id", userId)
@@ -93,22 +102,22 @@ export async function POST(request: NextRequest) {
 
     // Increment usage counter
     if (usage) {
-      await supabase
+      await client
         .from("aigw_usage")
         .update({ request_count: requestCount + 1, updated_at: new Date().toISOString() })
         .eq("user_id", userId)
         .eq("month_year", month_year);
     } else {
-      await supabase
+      await client
         .from("aigw_usage")
-        .insert({
+        .insert([{
           user_id: userId,
           key_id: keyId,
           month_year,
           request_count: 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        }]);
     }
 
     return NextResponse.json(responseData, { status: gatewayResponse.status });

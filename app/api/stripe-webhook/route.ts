@@ -2,11 +2,25 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let stripe: Stripe;
+let supabase: ReturnType<typeof createClient>;
+
+function getStripe() {
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+  }
+  return stripe;
+}
+
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+    );
+  }
+  return supabase;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -14,10 +28,11 @@ export async function POST(request: NextRequest) {
 
   let event;
   try {
-    event = stripe.webhooks.constructEvent(
+    const stripeClient = getStripe();
+    event = stripeClient.webhooks.constructEvent(
       body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET || ""
     );
   } catch (err) {
     return NextResponse.json({ error: "Webhook signature verification failed" }, { status: 400 });
@@ -33,7 +48,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user to Pro
-    await supabase
+    const client = getSupabase() as any;
+    await client
       .from("aigw_users")
       .update({
         plan: "pro",
